@@ -33,3 +33,4 @@ Copy `.env.example` to `.env.local` and set:
 - The attention detector expects face-api.js models to be available in `public/models`.
 - The app falls back to safe local behavior if Hugging Face or Supabase credentials are missing.
 - Run the Supabase migration in `supabase/migrations/0001_mentorverse_sessions.sql` to create the `mentorverse_sessions` table, indexes, and base RLS policies.
+fix contributor graph
