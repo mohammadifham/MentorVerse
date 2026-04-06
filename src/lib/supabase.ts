@@ -7,20 +7,41 @@ type LearningSessionRow = {
   score?: number | null;
 };
 
+function isValidHttpUrl(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  if (value.includes('your_supabase_') || value.includes('placeholder')) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function createSupabaseAdminClient(): SupabaseClient | null {
   const supabaseUrl = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  if (!isValidHttpUrl(supabaseUrl) || !supabaseKey || supabaseKey.includes('your_supabase_') || supabaseKey.includes('placeholder')) {
     return null;
   }
 
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  });
+  try {
+    return createClient(supabaseUrl as string, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    });
+  } catch {
+    return null;
+  }
 }
 
 export async function saveLearningSession(record: LearningRecord): Promise<void> {

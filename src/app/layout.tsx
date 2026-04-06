@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import '@/app/globals.css';
+import './globals.css';
 import { AuthPanel } from '@/components/auth-panel';
 import type { ReactNode } from 'react';
 

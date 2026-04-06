@@ -19,6 +19,7 @@ export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
     let intervalId: number | undefined;
     let faceApiModule: typeof import('face-api.js') | null = null;
     let detectionOptions: any = null;
+    let modelsLoaded = false;
 
     async function loadModels() {
       try {
@@ -28,10 +29,16 @@ export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
         if (!mounted) {
           return;
         }
+        modelsLoaded = true;
         setReady(true);
         setStatus('Focused');
         setDetails('Camera is active. Face detection runs every 2 seconds.');
         onStatusChange?.('Focused');
+
+        intervalId = window.setInterval(() => {
+          void checkAttention();
+        }, 2000);
+        void checkAttention();
       } catch {
         if (!mounted) {
           return;
@@ -44,7 +51,7 @@ export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
 
     async function checkAttention() {
       const video = webcamRef.current?.video;
-      if (!video || video.readyState !== 4 || !faceApiModule || !detectionOptions) {
+      if (!video || video.readyState !== 4 || !faceApiModule || !detectionOptions || !modelsLoaded) {
         return;
       }
 
@@ -62,10 +69,6 @@ export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
     }
 
     void loadModels();
-    intervalId = window.setInterval(() => {
-      void checkAttention();
-    }, 2000);
-    void checkAttention();
 
     return () => {
       mounted = false;
