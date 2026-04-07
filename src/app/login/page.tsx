@@ -1,0 +1,82 @@
+'use client';
+
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
+import { signInWithEmail, signInWithGoogle } from '@/lib/firebase';
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleLogin = async (event: FormEvent) => {
+    event.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      await signInWithEmail(email.trim(), password);
+      router.push('/dashboard');
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'Login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError(null);
+    setLoading(true);
+
+    try {
+      await signInWithGoogle();
+      router.push('/dashboard');
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : 'Google login failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-white/10 bg-slate-950/70 p-7 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:p-10">
+      <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Learner login</p>
+      <h1 className="mt-2 text-3xl font-semibold text-white">Welcome back</h1>
+      <p className="mt-3 text-sm text-slate-300">Login with your email and password or continue using Google.</p>
+
+      <form onSubmit={handleLogin} className="mt-7 space-y-4">
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-200">Email</span>
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="you@example.com" />
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-sm text-slate-200">Password</span>
+          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="input-field" placeholder="Enter your password" />
+        </label>
+
+        <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
+
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        disabled={loading}
+        className="btn-secondary mt-4 w-full py-3"
+      >
+        Continue with Google
+      </button>
+
+      {error ? <p className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-100">{error}</p> : null}
+
+      <p className="mt-5 text-sm text-slate-400">
+        New learner? <Link href="/signup" className="text-cyan-200 transition hover:text-cyan-100">Create account</Link>
+      </p>
+    </div>
+  );
+}
