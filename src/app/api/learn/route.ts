@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { verifyRequestAuth } from '@/lib/firebase-admin';
 import { adaptiveAgent } from '@/lib/agents/adaptive';
 import { analysisAgent } from '@/lib/agents/analysis';
 import { attendanceAgent } from '@/lib/agents/attendance';
@@ -19,6 +20,7 @@ const requestSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const { uid } = await verifyRequestAuth(request);
     const body = requestSchema.parse(await request.json());
 
     const teacherResult = await teacherAgent(body.topic);
@@ -48,7 +50,7 @@ export async function POST(request: Request) {
       answer
     });
     const evaluationResult = evaluationAgent({ confidence: cognitiveResult.confidence });
-    const recentHistory = await getRecentLearningSessions(body.userId);
+    const recentHistory = await getRecentLearningSessions(uid);
     const analysisResult = analysisAgent({
       topic: body.topic,
       confidence: cognitiveResult.confidence,
@@ -61,7 +63,7 @@ export async function POST(request: Request) {
     });
 
     await saveLearningSession({
-      userId: body.userId,
+      userId: uid,
       topic: body.topic,
       answer: hasAnswer ? answer : undefined,
       confidence: cognitiveResult.confidence,

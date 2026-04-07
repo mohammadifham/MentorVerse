@@ -1,10 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { Brain, CheckCircle2, Lightbulb, Sparkles } from 'lucide-react';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { AuthPanel } from '@/components/auth-panel';
+import { getFirebaseAuth } from '@/lib/firebase';
 import type { AttentionStatus, LearningResponse } from '@/lib/types';
 
 const AttentionMonitor = dynamic(
@@ -34,24 +36,49 @@ export function LearnWorkspace() {
   const [weakTopics, setWeakTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [attentionStatus, setAttentionStatus] = useState<AttentionStatus>('Preparing');
   const [lessonLoaded, setLessonLoaded] = useState(false);
+  const [userId, setUserId] = useState<string | undefined>(undefined);
   const startedAtRef = useRef<number | null>(null);
 
   const confidencePercent = useMemo(() => Math.round(confidence * 100), [confidence]);
 
+  useEffect(() => {
+    try {
+      const auth = getFirebaseAuth();
+      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        setUserId(currentUser?.uid);
+      });
+
+      return () => unsubscribe();
+    } catch {
+      setUserId(undefined);
+    }
+  }, []);
+
   const fetchLesson = async () => {
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setError('Please sign in to start a learning session.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setNotice(null);
     try {
+      const idToken = await currentUser.getIdToken();
       const response = await fetch('/api/learn', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ topic, userId })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to load lesson.');
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error || 'Failed to load lesson.');
       }
 
       const data = (await response.json()) as LearningResponse;
@@ -63,6 +90,7 @@ export function LearnWorkspace() {
       setWeakTopics(data.weak_topics);
       startedAtRef.current = Date.now();
       setLessonLoaded(true);
+      setNotice('Lesson loaded. You can now submit your answer.');
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : 'Something went wrong.');
     } finally {
@@ -76,18 +104,28 @@ export function LearnWorkspace() {
       return;
     }
 
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      setError('Please sign in to submit your answer.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setNotice(null);
     try {
+      const idToken = await currentUser.getIdToken();
       const responseTime = startedAtRef.current ? Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000)) : undefined;
       const response = await fetch('/api/learn', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, answer, responseTime, question })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({ topic, answer, responseTime, question, userId })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to evaluate answer.');
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error || 'Failed to evaluate answer.');
       }
 
       const data = (await response.json()) as LearningResponse;
@@ -98,6 +136,7 @@ export function LearnWorkspace() {
       setFeedback(data.feedback);
       setWeakTopics(data.weak_topics);
       setLessonLoaded(true);
+      setNotice('Answer submitted successfully. Feedback and confidence have been updated.');
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Something went wrong.');
     } finally {
@@ -228,6 +267,7 @@ export function LearnWorkspace() {
               <SummaryRow label="Response" value={lessonLoaded ? 'Tracked' : 'Waiting'} />
             </div>
             {loading ? <div className="mt-5"><LoadingSpinner /></div> : null}
+            {notice ? <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">{notice}</p> : null}
             {error ? <p className="mt-4 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4 text-sm text-rose-100">{error}</p> : null}
           </section>
         </div>

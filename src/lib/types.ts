@@ -77,3 +77,44 @@ export interface DashboardSummary {
   trend: Array<{ label: string; value: number }>;
   sessionCount: number;
 }
+
+export interface LearnerProfile {
+  userId: string;
+  name: string;
+  phone: string;
+  email: string;
+  course: string;
+  profileDp?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CodeSubmissionRecord {
+  userId: string;
+  problemId: string;
+  problemTitle: string;
+  topic: string;
+  language: string;
+  version: string;
+  score: number;
+  passed: boolean;
+  output?: string;
+  error?: string;
+  aiFeedback?: string;
+  createdAt?: string;
+}
+
+export interface CodeSubmissionSummary {
+  totalSubmissions: number;
+  solvedCount: number;
+  averageScore: number;
+  currentStreak: number;
+  recentSubmissions: Array<{
+    problemTitle: string;
+    topic: string;
+    language: string;
+    score: number;
+    passed: boolean;
+    createdAt: string;
+  }>;
+}

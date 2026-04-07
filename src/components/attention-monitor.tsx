@@ -10,9 +10,57 @@ interface AttentionMonitorProps {
 
 export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
   const webcamRef = useRef<Webcam | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const lastAlarmAtRef = useRef<number>(0);
   const [status, setStatus] = useState<AttentionStatus>('Preparing');
   const [details, setDetails] = useState('Loading camera and detection model...');
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'Distracted') {
+      return;
+    }
+
+    const now = Date.now();
+    // Prevent sound spam while detection polls every 2 seconds.
+    if (now - lastAlarmAtRef.current < 7000) {
+      return;
+    }
+    lastAlarmAtRef.current = now;
+
+    try {
+      const AudioContextCtor = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextCtor) {
+        return;
+      }
+
+      const ctx = audioContextRef.current ?? new AudioContextCtor();
+      audioContextRef.current = ctx;
+
+      const start = ctx.currentTime;
+      const notes = [880, 740, 880];
+      notes.forEach((freq, index) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = freq;
+
+        const noteStart = start + index * 0.18;
+        const noteEnd = noteStart + 0.14;
+
+        gain.gain.setValueAtTime(0.0001, noteStart);
+        gain.gain.exponentialRampToValueAtTime(0.08, noteStart + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(noteStart);
+        osc.stop(noteEnd);
+      });
+    } catch {
+      return;
+    }
+  }, [status]);
 
   useEffect(() => {
     let mounted = true;
@@ -74,6 +122,10 @@ export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
       mounted = false;
       if (intervalId) {
         window.clearInterval(intervalId);
+      }
+      if (audioContextRef.current) {
+        void audioContextRef.current.close();
+        audioContextRef.current = null;
       }
     };
   }, [onStatusChange]);

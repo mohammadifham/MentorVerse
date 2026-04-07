@@ -1,5 +1,12 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { GoogleAuthProvider, getAuth, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  type UserCredential
+} from 'firebase/auth';
 
 function getFirebaseConfig() {
   return {
@@ -45,6 +52,11 @@ export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
   return signInWithPopup(auth, provider);
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<UserCredential> {
+  const auth = getFirebaseAuth();
+  return signInWithEmailAndPassword(auth, email, password);
 }
 
 export async function signOutUser() {

@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { LogIn, LogOut } from 'lucide-react';
-import { getFirebaseAuth, signInWithGoogle, signOutUser } from '@/lib/firebase';
+import { getFirebaseAuth, signOutUser } from '@/lib/firebase';
 
 export function AuthPanel() {
   const [user, setUser] = useState<User | null>(null);
@@ -25,15 +26,6 @@ export function AuthPanel() {
     }
   }, []);
 
-  const handleSignIn = async () => {
-    setError(null);
-    try {
-      await signInWithGoogle();
-    } catch {
-      setError('Sign-in failed. Check Firebase settings and Google auth provider configuration.');
-    }
-  };
-
   const handleSignOut = async () => {
     setError(null);
     try {
@@ -51,23 +43,29 @@ export function AuthPanel() {
       </div>
       <div className="flex gap-2">
         {user ? (
-          <button
-            type="button"
-            onClick={handleSignOut}
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition hover:border-cyan-400/60 hover:bg-white/10"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
+          <>
+            <Link href="/dashboard" className="btn-secondary rounded-full px-4 py-2 text-sm">
+              Dashboard
+            </Link>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="btn-secondary rounded-full px-4 py-2 text-sm"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </>
         ) : (
-          <button
-            type="button"
-            onClick={handleSignIn}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-violet-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/20 transition hover:scale-[1.01]"
-          >
-            <LogIn className="h-4 w-4" />
-            Sign in with Google
-          </button>
+          <>
+            <Link href="/login" className="btn-secondary rounded-full px-4 py-2 text-sm">
+              <LogIn className="h-4 w-4" />
+              Login
+            </Link>
+            <Link href="/signup" className="btn-primary rounded-full px-4 py-2 text-sm">
+              Sign up
+            </Link>
+          </>
         )}
       </div>
       {error ? <p className="max-w-xs text-right text-xs text-rose-300">{error}</p> : null}
