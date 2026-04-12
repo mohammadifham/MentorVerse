@@ -3,10 +3,12 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { Brain, CheckCircle2, Lightbulb, Sparkles } from 'lucide-react';
+import { Brain, CheckCircle2, Lightbulb, Sparkles, Mic, MicOff, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { AuthPanel } from '@/components/auth-panel';
+import { AttendanceTracker } from '@/components/attendance-tracker';
 import { getFirebaseAuth } from '@/lib/firebase';
+import { voiceCommandService } from '@/lib/voice-service';
 import type { AttentionStatus, LearningResponse } from '@/lib/types';
 
 const AttentionMonitor = dynamic(
@@ -40,7 +42,13 @@ export function LearnWorkspace() {
   const [attentionStatus, setAttentionStatus] = useState<AttentionStatus>('Preparing');
   const [lessonLoaded, setLessonLoaded] = useState(false);
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [sessionCount, setSessionCount] = useState(0);
+  const [responseTime, setResponseTime] = useState(0);
   const startedAtRef = useRef<number | null>(null);
+  const voiceUsingRef = useRef<boolean>(false);
 
   const confidencePercent = useMemo(() => Math.round(confidence * 100), [confidence]);
 
@@ -55,6 +63,48 @@ export function LearnWorkspace() {
     } catch {
       setUserId(undefined);
     }
+  }, []);
+
+  useEffect(() => {
+    // Check if voice commands are supported (client-side only)
+    const checkVoiceSupport = () => {
+      const supported = voiceCommandService.isSupported();
+      setVoiceSupported(supported);
+    };
+
+    // Small delay to ensure DOM is ready
+    setTimeout(checkVoiceSupport, 0);
+
+    // Setup voice recognition handlers
+    const setupVoiceHandlers = () => {
+      if (voiceCommandService.isSupported()) {
+        voiceCommandService.onStart(() => {
+          setIsListening(true);
+          setVoiceTranscript('');
+        });
+
+        voiceCommandService.onResult((result) => {
+          setVoiceTranscript(result.transcript);
+        });
+
+        voiceCommandService.onError((error) => {
+          setError(`Voice recognition error: ${error}`);
+          setIsListening(false);
+        });
+
+        voiceCommandService.onEnd(() => {
+          setIsListening(false);
+        });
+      }
+    };
+
+    setupVoiceHandlers();
+
+    return () => {
+      if (voiceCommandService.isSupported()) {
+        voiceCommandService.abort();
+      }
+    };
   }, []);
 
   const fetchLesson = async () => {
@@ -84,13 +134,22 @@ export function LearnWorkspace() {
       const data = (await response.json()) as LearningResponse;
       setExplanation(data.explanation);
       setQuestion(data.question);
-      setConfidence(data.confidence);
+      
+      // Handle confidence - convert to 0-1 range if needed
+      const confValue = typeof data.confidence === 'number' 
+        ? (data.confidence > 1 ? data.confidence / 100 : data.confidence)
+        : 0.5;
+      setConfidence(confValue);
+      
       setLevel(data.level);
       setFeedback(data.feedback);
       setWeakTopics(data.weak_topics);
+      setSessionCount(prev => prev + 1); // Increment session count
+      setResponseTime(0); // Reset response time for new session
       startedAtRef.current = Date.now();
       setLessonLoaded(true);
-      setNotice('Lesson loaded. You can now submit your answer.');
+      setAnswer(''); // Clear previous answer
+      setNotice('Lesson loaded. You can now submit your answer using text or voice!');
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : 'Something went wrong.');
     } finally {
@@ -116,7 +175,9 @@ export function LearnWorkspace() {
     setNotice(null);
     try {
       const idToken = await currentUser.getIdToken();
-      const responseTime = startedAtRef.current ? Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000)) : undefined;
+      const responseTime = startedAtRef.current ? Math.max(1, Math.round((Date.now() - startedAtRef.current) / 1000)) : 0;
+      setResponseTime(responseTime);
+      
       const response = await fetch('/api/learn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
@@ -131,16 +192,57 @@ export function LearnWorkspace() {
       const data = (await response.json()) as LearningResponse;
       setExplanation(data.explanation);
       setQuestion(data.question);
-      setConfidence(data.confidence);
+      
+      // Handle confidence update
+      const confValue = typeof data.confidence === 'number' 
+        ? (data.confidence > 1 ? data.confidence / 100 : data.confidence)
+        : confidence;
+      setConfidence(confValue);
+      
       setLevel(data.level);
       setFeedback(data.feedback);
       setWeakTopics(data.weak_topics);
       setLessonLoaded(true);
-      setNotice('Answer submitted successfully. Feedback and confidence have been updated.');
+      setNotice(`Answer evaluated! Response time: ${responseTime}s. Voice used: ${voiceUsingRef.current ? 'Yes' : 'No'}`);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Something went wrong.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startVoiceCommand = () => {
+    if (!voiceCommandService.isSupported()) {
+      setError('Voice recognition is not supported in your browser. Please use Chrome, Edge, Safari, or another modern browser.');
+      return;
+    }
+
+    if (!lessonLoaded) {
+      setError('Please start a learning session first by clicking "Start Learning".');
+      return;
+    }
+
+    setError(null);
+    voiceUsingRef.current = true;
+    voiceCommandService.startListening({
+      language: 'en-US',
+      continuous: false,
+      interimResults: true
+    });
+  };
+
+  const stopVoiceCommand = () => {
+    const transcript = voiceCommandService.stopListening();
+
+    if (transcript) {
+      // Append voice input to existing answer or replace if empty
+      const updatedAnswer = answer
+        ? `${answer} ${transcript}`
+        : transcript;
+      setAnswer(updatedAnswer);
+      setNotice(`✓ Voice input captured (${transcript.length} characters). You can now submit your answer.`);
+    } else {
+      setNotice('No speech detected. Please try again.');
     }
   };
 
@@ -210,6 +312,19 @@ export function LearnWorkspace() {
                 placeholder="Write your response in a few sentences..."
                 className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-cyan-400/60"
               />
+              {voiceSupported && isListening && (
+                <div className="mt-2 rounded-lg border border-cyan-400/30 bg-cyan-400/5 p-3">
+                  <p className="flex items-center gap-2 text-sm text-cyan-300">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-400" />
+                    Listening... Say your answer now.
+                  </p>
+                  {voiceTranscript && (
+                    <p className="mt-2 text-sm text-cyan-100">
+                      <strong>Heard:</strong> {voiceTranscript}
+                    </p>
+                  )}
+                </div>
+              )}
             </label>
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
@@ -221,6 +336,36 @@ export function LearnWorkspace() {
                 <CheckCircle2 className="h-4 w-4" />
                 Submit Answer
               </button>
+              {voiceSupported && (
+                <button
+                  type="button"
+                  onClick={isListening ? stopVoiceCommand : startVoiceCommand}
+                  disabled={loading}
+                  className={`inline-flex items-center gap-2 rounded-2xl px-5 py-3 font-medium transition ${
+                    isListening
+                      ? 'border border-cyan-400/50 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20'
+                      : 'border border-white/10 bg-white/5 text-white hover:border-cyan-400/50 hover:bg-white/10'
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {isListening ? (
+                    <>
+                      <MicOff className="h-4 w-4" />
+                      Stop Listening
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="h-4 w-4" />
+                      Voice Answer
+                    </>
+                  )}
+                </button>
+              )}
+              {!voiceSupported && (
+                <div className="inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-4 py-2">
+                  <AlertCircle className="h-4 w-4 text-amber-400" />
+                  <span className="text-xs text-amber-300">Voice not supported</span>
+                </div>
+              )}
               <div className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300">
                 Difficulty: <span className="font-semibold text-white">{level}</span>
               </div>
@@ -259,12 +404,20 @@ export function LearnWorkspace() {
 
         <div className="space-y-6">
           <AttentionMonitor onStatusChange={setAttentionStatus} />
+          <AttendanceTracker
+            existingSessions={sessionCount}
+            responseTime={responseTime}
+            answerProvided={answer.trim().length > 0}
+            attentionStatus={attentionStatus}
+            voiceCommandUsed={voiceUsingRef.current}
+          />
           <section className="rounded-3xl border border-white/10 bg-slate-950/70 p-5 backdrop-blur">
             <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">Session Summary</p>
             <div className="mt-4 space-y-4 text-sm text-slate-300">
               <SummaryRow label="Topic" value={topic || '—'} />
               <SummaryRow label="Status" value={attentionStatus} />
-              <SummaryRow label="Response" value={lessonLoaded ? 'Tracked' : 'Waiting'} />
+              <SummaryRow label="Sessions" value={sessionCount.toString()} />
+              <SummaryRow label="Response Time" value={responseTime > 0 ? `${responseTime}s` : '—'} />
             </div>
             {loading ? <div className="mt-5"><LoadingSpinner /></div> : null}
             {notice ? <p className="mt-4 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">{notice}</p> : null}

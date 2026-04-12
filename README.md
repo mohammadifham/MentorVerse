@@ -1,37 +1,66 @@
+---
+title: MentorVerse
+emoji: "🚀"
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # MentorVerse
 
-MentorVerse is a multi-agent AI learning ecosystem built with Next.js 14, TypeScript, Tailwind CSS, Supabase, Firebase Authentication, Hugging Face Inference API, and face-api.js attention tracking.
+MentorVerse is a multi-agent AI learning platform built with Next.js 14, TypeScript, Tailwind CSS, Supabase, Firebase Authentication, Hugging Face Inference API, and face-api.js.
 
-## Features
+## Highlights
 
-- Home, learning, and dashboard pages
-- Teacher, cognitive, adaptive, mentor, evaluation, attendance, analysis, and attention agents
-- Hugging Face integration for explanations, questions, and feedback
-- Supabase-backed learning session storage
-- Firebase Google sign-in
-- Webcam attention detection with face-api.js
+- Learning and dashboard workspaces with adaptive feedback
+- Agent-driven teaching, mentoring, evaluation, and analysis flows
+- AI-assisted coding practice and response feedback
+- Supabase-backed session and profile persistence
+- Firebase authentication integration
+- Optional webcam-based attention monitoring
+
+## Project Structure
+
+- `src/app` - App Router pages and API routes
+- `src/components` - Reusable UI and workspace components
+- `src/lib` - Integrations, business logic, and agent modules
+- `src/types` - Shared TypeScript types
+- `public/models` - face-api.js model manifests and optional artifacts
+- `supabase/migrations` - SQL migrations
+
+## Local Setup
+
+1. Install dependencies:
+	`npm install`
+2. Copy environment template:
+	`cp .env.example .env.local`
+3. Fill required values in `.env.local`.
+4. Start development server:
+	`npm run dev`
+
+## Scripts
+
+- `npm run dev` - Start local development server
+- `npm run build` - Create production build
+- `npm run start` - Run production server
+- `npm run lint` - Run lint checks
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` and set:
+Use `.env.example` as the source of truth for required keys.
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `HUGGINGFACE_API_KEY`
-- `NEXT_PUBLIC_HUGGINGFACE_MODEL`
-- `NEXT_PUBLIC_FIREBASE_API_KEY`
-- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `NEXT_PUBLIC_FIREBASE_APP_ID`
+Security notes:
 
-## Notes
+- Never commit `.env.local`.
+- Store production secrets in your deployment platform settings.
+- Rotate credentials immediately if exposed.
 
-- The attention detector expects face-api.js models to be available in `public/models`.
-- The app falls back to safe local behavior if Hugging Face or Supabase credentials are missing.
-- Run the Supabase migration in `supabase/migrations/0001_mentorverse_sessions.sql` to create the `mentorverse_sessions` table, indexes, and base RLS policies.
-fix contributor graph
-final fix now works
+## Deployment
+
+This repository is configured for Hugging Face Spaces with Docker (`app_port: 7860`).
+
+Primary deployment URL:
+
+- `https://ifham69-mentorverse.hf.space`
