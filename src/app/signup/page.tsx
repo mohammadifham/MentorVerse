@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, useState } from 'react';
-import { signInWithGoogle } from '@/lib/firebase';
+import { getFirebaseConfigurationError, signInWithGoogle } from '@/lib/firebase';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,6 +15,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const firebaseConfigError = getFirebaseConfigurationError();
 
   const handleProfileDpUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -42,8 +43,13 @@ export default function SignupPage() {
     setError(null);
     setSuccess(null);
 
-    if (!name.trim() || !phone.trim() || !email.trim() || !course.trim()) {
-      setError('Please fill in name, number, email, and course.');
+    if (!name.trim() || !phone.trim() || !course.trim()) {
+      setError('Please fill in name, number, and course before continuing with Google.');
+      return;
+    }
+
+    if (firebaseConfigError) {
+      setError(firebaseConfigError);
       return;
     }
 
@@ -53,6 +59,10 @@ export default function SignupPage() {
       const googleUser = authResult.user;
       const idToken = await googleUser.getIdToken();
       const finalEmail = googleUser.email || email.trim();
+
+      if (!finalEmail) {
+        throw new Error('Google account did not provide an email. Please try another account.');
+      }
 
       const response = await fetch('/api/learner-profile', {
         method: 'POST',
@@ -75,7 +85,8 @@ export default function SignupPage() {
       setSuccess('Account created successfully. Redirecting to dashboard...');
       router.push('/dashboard');
     } catch (signupError) {
-      setError(signupError instanceof Error ? signupError.message : 'Signup failed.');
+      const fallback = signupError instanceof Error ? signupError.message : 'Signup failed.';
+      setError(firebaseConfigError ?? fallback);
     } finally {
       setLoading(false);
     }
@@ -90,22 +101,22 @@ export default function SignupPage() {
       <form onSubmit={handleSignup} className="mt-7 grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Full name</span>
-          <input value={name} onChange={(event) => setName(event.target.value)} className="input-field" placeholder="Enter your name" />
+          <input required value={name} onChange={(event) => setName(event.target.value)} className="input-field" placeholder="Enter your name" />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Number</span>
-          <input value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="Enter your number" />
+          <input required value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="Enter your number" />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Email</span>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="you@example.com" />
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="Optional. Google account email will be used." />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Course</span>
-          <input value={course} onChange={(event) => setCourse(event.target.value)} className="input-field" placeholder="Data Structures" />
+          <input required value={course} onChange={(event) => setCourse(event.target.value)} className="input-field" placeholder="Data Structures" />
         </label>
 
         <label className="block sm:col-span-2">
@@ -115,12 +126,13 @@ export default function SignupPage() {
         </label>
 
         <div className="sm:col-span-2">
-          <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+          <button type="submit" disabled={loading || Boolean(firebaseConfigError)} className="btn-primary w-full py-3">
             {loading ? 'Creating account...' : 'Continue with Google'}
           </button>
         </div>
       </form>
 
+      {firebaseConfigError ? <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">{firebaseConfigError}</p> : null}
       {error ? <p className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-100">{error}</p> : null}
       {success ? <p className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">{success}</p> : null}
 

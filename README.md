@@ -51,6 +51,23 @@ MentorVerse is a multi-agent AI learning platform built with Next.js 14, TypeScr
 
 Use `.env.example` as the source of truth for required keys.
 
+For Vercel deployments, add these variables in Project Settings -> Environment Variables:
+
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `HUGGINGFACE_API_KEY` or (`HF_TOKEN`, `API_BASE_URL`, `MODEL_NAME` for OpenAI-compatible inference)
+
+After adding/updating environment variables, redeploy so Next.js rebuilds with the correct `NEXT_PUBLIC_*` values.
+
 Security notes:
 
 - Never commit `.env.local`.

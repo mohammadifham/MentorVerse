@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
-import { signInWithEmail, signInWithGoogle } from '@/lib/firebase';
+import { getFirebaseConfigurationError, signInWithEmail, signInWithGoogle } from '@/lib/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const firebaseConfigError = getFirebaseConfigurationError();
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -21,7 +22,8 @@ export default function LoginPage() {
       await signInWithEmail(email.trim(), password);
       router.push('/dashboard');
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : 'Login failed.');
+      const fallback = loginError instanceof Error ? loginError.message : 'Login failed.';
+      setError(firebaseConfigError ?? fallback);
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,8 @@ export default function LoginPage() {
       await signInWithGoogle();
       router.push('/dashboard');
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : 'Google login failed.');
+      const fallback = loginError instanceof Error ? loginError.message : 'Google login failed.';
+      setError(firebaseConfigError ?? fallback);
     } finally {
       setLoading(false);
     }
@@ -58,7 +61,7 @@ export default function LoginPage() {
           <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="input-field" placeholder="Enter your password" />
         </label>
 
-        <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+        <button type="submit" disabled={loading || Boolean(firebaseConfigError)} className="btn-primary w-full py-3">
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
@@ -66,12 +69,13 @@ export default function LoginPage() {
       <button
         type="button"
         onClick={handleGoogleLogin}
-        disabled={loading}
+        disabled={loading || Boolean(firebaseConfigError)}
         className="btn-secondary mt-4 w-full py-3"
       >
         Continue with Google
       </button>
 
+      {firebaseConfigError ? <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">{firebaseConfigError}</p> : null}
       {error ? <p className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-100">{error}</p> : null}
 
       <p className="mt-5 text-sm text-slate-400">

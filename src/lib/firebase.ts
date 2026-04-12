@@ -19,15 +19,39 @@ function getFirebaseConfig() {
   };
 }
 
-function isFirebaseConfigured() {
+function getMissingFirebaseEnvVars() {
   const config = getFirebaseConfig();
-  return Boolean(config.apiKey && config.authDomain && config.projectId && config.appId);
+  const missing: string[] = [];
+
+  if (!config.apiKey) missing.push('NEXT_PUBLIC_FIREBASE_API_KEY');
+  if (!config.authDomain) missing.push('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN');
+  if (!config.projectId) missing.push('NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+  if (!config.appId) missing.push('NEXT_PUBLIC_FIREBASE_APP_ID');
+
+  return missing;
+}
+
+function isFirebaseConfigured() {
+  return getMissingFirebaseEnvVars().length === 0;
+}
+
+export function getFirebaseConfigurationError() {
+  const missingVars = getMissingFirebaseEnvVars();
+  if (missingVars.length === 0) {
+    return null;
+  }
+
+  return `Firebase configuration is missing: ${missingVars.join(', ')}. Add these in Vercel Project Settings -> Environment Variables, then redeploy.`;
 }
 
 export function getFirebaseApp() {
   const config = getFirebaseConfig();
   if (!isFirebaseConfigured()) {
-    throw new Error('Firebase environment variables are missing.');
+    const missingVars = getMissingFirebaseEnvVars();
+    throw new Error(
+      `Firebase environment variables are missing: ${missingVars.join(', ')}. ` +
+      'Add NEXT_PUBLIC_FIREBASE_* variables in Vercel and redeploy.'
+    );
   }
 
   if (getApps().length > 0) {

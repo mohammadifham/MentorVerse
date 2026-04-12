@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { LogIn, LogOut } from 'lucide-react';
-import { getFirebaseAuth, signOutUser } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseConfigurationError, signOutUser } from '@/lib/firebase';
 
 export function AuthPanel() {
   const [user, setUser] = useState<User | null>(null);
@@ -22,7 +22,7 @@ export function AuthPanel() {
       return () => unsubscribe();
     } catch {
       setReady(true);
-      setError('Firebase auth is not configured yet.');
+      setError(getFirebaseConfigurationError() ?? 'Firebase auth is not configured yet.');
     }
   }, []);
 
