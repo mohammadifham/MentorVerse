@@ -41,7 +41,7 @@ export function getFirebaseConfigurationError() {
     return null;
   }
 
-  return `Firebase configuration is missing: ${missingVars.join(', ')}. Add these in Vercel Project Settings -> Environment Variables, then redeploy.`;
+  return `Firebase configuration is missing: ${missingVars.join(', ')}. Add these in your deployment environment variables, then rebuild/redeploy.`;
 }
 
 export function getFirebaseApp() {
@@ -50,7 +50,7 @@ export function getFirebaseApp() {
     const missingVars = getMissingFirebaseEnvVars();
     throw new Error(
       `Firebase environment variables are missing: ${missingVars.join(', ')}. ` +
-      'Add NEXT_PUBLIC_FIREBASE_* variables in Vercel and redeploy.'
+      'Add NEXT_PUBLIC_FIREBASE_* variables in your deployment settings and redeploy.'
     );
   }
 
