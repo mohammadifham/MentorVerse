@@ -8,10 +8,23 @@ import { OpenAI } from 'openai';
  * - LOCAL_IMAGE_NAME: Local Docker image name (optional, for from_docker_image())
  */
 
-const API_BASE_URL = process.env.API_BASE_URL ?? 'https://api-inference.huggingface.co/v1';
+function normalizeApiBaseUrl(value: string | undefined): string {
+  const baseUrl = value?.trim() || 'https://router.huggingface.co/v1';
+  return baseUrl.includes('api-inference.huggingface.co')
+    ? baseUrl.replace('https://api-inference.huggingface.co', 'https://router.huggingface.co')
+    : baseUrl;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(process.env.API_BASE_URL);
 const MODEL_NAME = process.env.MODEL_NAME ?? 'mistralai/Mistral-7B-Instruct';
 const HF_TOKEN = process.env.HF_TOKEN;
 const LOCAL_IMAGE_NAME = process.env.LOCAL_IMAGE_NAME;
+const MODEL_FALLBACKS = [
+  MODEL_NAME,
+  'meta-llama/Llama-3.1-8B-Instruct',
+  'Qwen/Qwen2.5-7B-Instruct',
+  'openai/gpt-oss-20b',
+].filter((model, index, models) => Boolean(model) && models.indexOf(model) === index);
 
 /**
  * Structured logging functions following START/STEP/END format
@@ -91,14 +104,41 @@ export async function runInference(
 
     logStep('Sending request to OpenAI-compatible API');
 
-    const response = await client.chat.completions.create({
-      model: MODEL_NAME,
-      messages,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-    });
+    let response;
+    let lastError: unknown;
 
-    logStep('Received response from API');
+    for (const modelName of MODEL_FALLBACKS) {
+      logStep(`Attempting model: ${modelName}`);
+
+      try {
+        response = await client.chat.completions.create({
+          model: modelName,
+          messages,
+          max_tokens: maxTokens,
+          temperature: 0.7,
+        });
+        logStep('Received response from API');
+        break;
+      } catch (error) {
+        lastError = error;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (
+          errorMessage.includes('model_not_found') ||
+          errorMessage.includes('model_not_supported') ||
+          errorMessage.includes('does not exist') ||
+          errorMessage.includes('not supported by any provider')
+        ) {
+          logStep(`Model unavailable: ${modelName}`);
+          continue;
+        }
+
+        throw error;
+      }
+    }
+
+    if (!response) {
+      throw lastError instanceof Error ? lastError : new Error(String(lastError ?? 'No model candidates succeeded'));
+    }
 
     const generatedText =
       response.choices[0]?.message?.content?.trim() ||
