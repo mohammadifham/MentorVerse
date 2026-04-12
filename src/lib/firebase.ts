@@ -2,6 +2,7 @@ import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
   GoogleAuthProvider,
   getAuth,
+  signInWithRedirect,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -76,6 +77,21 @@ export async function signInWithGoogle() {
   const auth = getFirebaseAuth();
   const provider = new GoogleAuthProvider();
   return signInWithPopup(auth, provider);
+}
+
+export async function signInWithGoogleRedirect() {
+  const auth = getFirebaseAuth();
+  const provider = new GoogleAuthProvider();
+  return signInWithRedirect(auth, provider);
+}
+
+export function isPopupBlockedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const code = 'code' in error ? String((error as { code?: string }).code) : '';
+  return code === 'auth/popup-blocked';
 }
 
 export async function signInWithEmail(email: string, password: string): Promise<UserCredential> {

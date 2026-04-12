@@ -2,8 +2,16 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useState } from 'react';
-import { getFirebaseConfigurationError, signInWithEmail, signInWithGoogle } from '@/lib/firebase';
+import { FormEvent, useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import {
+  getFirebaseAuth,
+  getFirebaseConfigurationError,
+  isPopupBlockedError,
+  signInWithEmail,
+  signInWithGoogle,
+  signInWithGoogleRedirect
+} from '@/lib/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,7 +19,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const firebaseConfigError = getFirebaseConfigurationError();
+
+  useEffect(() => {
+    if (firebaseConfigError) {
+      return;
+    }
+
+    try {
+      const auth = getFirebaseAuth();
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          router.push('/dashboard');
+        }
+      });
+
+      return () => unsubscribe();
+    } catch {
+      return;
+    }
+  }, [firebaseConfigError, router]);
 
   const handleLogin = async (event: FormEvent) => {
     event.preventDefault();
@@ -31,12 +59,19 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     setError(null);
+    setNotice(null);
     setLoading(true);
 
     try {
       await signInWithGoogle();
       router.push('/dashboard');
     } catch (loginError) {
+      if (isPopupBlockedError(loginError)) {
+        setNotice('Popup blocked by browser. Redirecting to Google sign-in...');
+        await signInWithGoogleRedirect();
+        return;
+      }
+
       const fallback = loginError instanceof Error ? loginError.message : 'Google login failed.';
       setError(firebaseConfigError ?? fallback);
     } finally {
@@ -76,6 +111,7 @@ export default function LoginPage() {
       </button>
 
       {firebaseConfigError ? <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">{firebaseConfigError}</p> : null}
+      {notice ? <p className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-3 text-sm text-cyan-100">{notice}</p> : null}
       {error ? <p className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-100">{error}</p> : null}
 
       <p className="mt-5 text-sm text-slate-400">
