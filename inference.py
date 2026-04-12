@@ -1,62 +1,70 @@
+"""Inference entrypoint for OpenEnv-style evaluation.
+
+Uses OpenAI-compatible chat completions endpoint configured by environment
+variables so it can target Hugging Face Inference or other compatible APIs.
+"""
+
+from __future__ import annotations
+
 import os
+from typing import Any
+
 from openai import OpenAI
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/Mistral-7B-Instruct")
-HF_TOKEN = os.getenv("HF_TOKEN")
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+
+def _require_env(name: str) -> str:
+	value = os.getenv(name, "").strip()
+	if not value:
+		raise ValueError(f"Missing required environment variable: {name}")
+	return value
 
 
-def _log_start(message: str) -> None:
-    print(f"[START] {message}")
+def run_inference(prompt: str) -> str:
+	"""Generate a response for a prompt.
+
+	Required env vars:
+	- OPENAI_BASE_URL
+	- OPENAI_API_KEY
+	- OPENAI_MODEL
+	"""
+	print("START: run_inference")
+
+	print("STEP: validating_environment")
+	base_url = _require_env("OPENAI_BASE_URL")
+	api_key = _require_env("OPENAI_API_KEY")
+	model = _require_env("OPENAI_MODEL")
+
+	print("STEP: creating_client")
+	client = OpenAI(base_url=base_url, api_key=api_key)
+
+	print("STEP: sending_request")
+	completion = client.chat.completions.create(
+		model=model,
+		messages=[
+			{
+				"role": "system",
+				"content": "You are a concise, helpful coding mentor.",
+			},
+			{"role": "user", "content": prompt},
+		],
+		temperature=0.2,
+		max_tokens=512,
+	)
+
+	print("STEP: parsing_response")
+	text = completion.choices[0].message.content or ""
+
+	print("END: run_inference")
+	return text.strip()
 
 
-def _log_step(message: str) -> None:
-    print(f"[STEP] {message}")
-
-
-def _log_end(message: str) -> None:
-    print(f"[END] {message}")
-
-
-def _client() -> OpenAI:
-    _log_start("Initialize OpenAI-compatible client")
-    _log_step(f"API_BASE_URL={API_BASE_URL}")
-    _log_step(f"MODEL_NAME={MODEL_NAME}")
-
-    if not HF_TOKEN:
-        _log_end("ERROR: HF_TOKEN is not set")
-        raise RuntimeError("HF_TOKEN is required")
-
-    client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
-    _log_end("Client initialized")
-    return client
-
-
-def run_inference(prompt: str, system_prompt: str | None = None, max_tokens: int = 220) -> str:
-    _log_start("Run inference")
-    _log_step(f"prompt_len={len(prompt)}")
-    _log_step(f"system_prompt={'yes' if system_prompt else 'no'}")
-
-    client = _client()
-    messages = []
-    if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
-    messages.append({"role": "user", "content": prompt})
-
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=messages,
-        max_tokens=max_tokens,
-        temperature=0.7,
-    )
-
-    text = (response.choices[0].message.content or "").strip()
-    _log_step(f"output_len={len(text)}")
-    _log_end("Inference complete")
-    return text
-
-
-if __name__ == "__main__":
-    sample_prompt = "Explain binary search in 3 short bullet points."
-    print(run_inference(sample_prompt))
+def handler(input_data: dict[str, Any]) -> dict[str, Any]:
+	"""Optional wrapper for external runners expecting a dict payload."""
+	prompt = str(input_data.get("prompt", "")).strip()
+	if not prompt:
+		return {"error": "Missing prompt"}
+	try:
+		output = run_inference(prompt)
+		return {"output": output}
+	except Exception as exc:  # pragma: no cover - defensive for runtime envs
+		return {"error": str(exc)}
