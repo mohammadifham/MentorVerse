@@ -4,8 +4,8 @@ import type { ReactNode } from 'react';
 import { AppShell } from '@/components/app-shell';
 
 export const metadata: Metadata = {
-  title: 'MentorVerse',
-  description: 'MentorVerse is a multi-agent AI learning ecosystem for personalized learning.'
+  title: 'GUIDELY | Multi-Agent AI Learning Ecosystem',
+  description: 'GUIDELY is an intelligent multi-agent AI learning platform for personalized coding and engineering education.'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

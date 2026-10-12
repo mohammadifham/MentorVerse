@@ -3,19 +3,19 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, useState } from 'react';
-import { getFirebaseConfigurationError, signInWithGoogle } from '@/lib/firebase';
+import { signInWithDemoStudent, signInWithEmail, signInWithGoogle } from '@/lib/firebase';
 
 export default function SignupPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [course, setCourse] = useState('');
+  const [password, setPassword] = useState('');
+  const [course, setCourse] = useState('Computer Science & Engineering');
   const [profileDp, setProfileDp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const firebaseConfigError = getFirebaseConfigurationError();
 
   const handleProfileDpUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -44,36 +44,28 @@ export default function SignupPage() {
     setSuccess(null);
 
     if (!name.trim() || !phone.trim() || !course.trim()) {
-      setError('Please fill in name, number, and course before continuing with Google.');
+      setError('Please fill in name, number, and course before continuing.');
       return;
     }
 
-    if (firebaseConfigError) {
-      setError(firebaseConfigError);
-      return;
-    }
+    const cleanEmail = email.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@mentorverse.dev`;
 
     setLoading(true);
     try {
-      const authResult = await signInWithGoogle();
-      const googleUser = authResult.user;
-      const idToken = await googleUser.getIdToken();
-      const finalEmail = googleUser.email || email.trim();
-
-      if (!finalEmail) {
-        throw new Error('Google account did not provide an email. Please try another account.');
-      }
+      const authResult = await signInWithEmail(cleanEmail, password || 'mentorverse123');
+      const user = authResult.user;
+      const idToken = await user.getIdToken();
 
       const response = await fetch('/api/learner-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
-          userId: googleUser.uid,
+          userId: user.uid,
           name: name.trim(),
           phone: phone.trim(),
-          email: finalEmail,
+          email: cleanEmail,
           course: course.trim(),
-          profileDp: profileDp.trim() || googleUser.photoURL || ''
+          profileDp: profileDp.trim() || user.photoURL || ''
         })
       });
 
@@ -82,11 +74,58 @@ export default function SignupPage() {
         throw new Error(data.error || 'Unable to create learner account.');
       }
 
-      setSuccess('Account created successfully. Redirecting to dashboard...');
-      router.push('/dashboard');
+      setSuccess('Account created successfully! Redirecting to dashboard...');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 600);
     } catch (signupError) {
       const fallback = signupError instanceof Error ? signupError.message : 'Signup failed.';
-      setError(firebaseConfigError ?? fallback);
+      setError(fallback);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickDemo = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await signInWithDemoStudent();
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Demo signup failed.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+    try {
+      const authResult = await signInWithGoogle();
+      const googleUser = authResult.user;
+      const idToken = await googleUser.getIdToken();
+      const finalEmail = googleUser.email || email.trim() || 'student@mentorverse.dev';
+
+      await fetch('/api/learner-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({
+          userId: googleUser.uid,
+          name: name.trim() || googleUser.displayName || 'Learner',
+          phone: phone.trim() || '+1 (555) 000-0000',
+          email: finalEmail,
+          course: course.trim() || 'Computer Science',
+          profileDp: profileDp.trim() || googleUser.photoURL || ''
+        })
+      });
+
+      setSuccess('Connected with Google! Redirecting...');
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Google signup failed.');
     } finally {
       setLoading(false);
     }
@@ -94,29 +133,38 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl rounded-[2rem] border border-white/10 bg-slate-950/70 p-7 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:p-10">
-      <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Create learner account</p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Create learner account</p>
+        <button
+          type="button"
+          onClick={handleQuickDemo}
+          className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/30"
+        >
+          ⚡ Fast Track as Demo Student
+        </button>
+      </div>
       <h1 className="mt-2 text-3xl font-semibold text-white">Sign up with your details</h1>
-      <p className="mt-3 text-sm text-slate-300">Fill your profile information, then continue with Google to create your MentorVerse account.</p>
+      <p className="mt-3 text-sm text-slate-300">Set up your profile to start adaptive AI mentoring and hands-on coding practice.</p>
 
       <form onSubmit={handleSignup} className="mt-7 grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Full name</span>
-          <input required value={name} onChange={(event) => setName(event.target.value)} className="input-field" placeholder="Enter your name" />
+          <input required value={name} onChange={(event) => setName(event.target.value)} className="input-field" placeholder="Jane Doe" />
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-sm text-slate-200">Number</span>
-          <input required value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="Enter your number" />
+          <span className="mb-2 block text-sm text-slate-200">Phone number</span>
+          <input required value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="+1 (555) 123-4567" />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Email</span>
-          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="Optional. Google account email will be used." />
+          <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="jane@example.com" />
         </label>
 
         <label className="block">
-          <span className="mb-2 block text-sm text-slate-200">Course</span>
-          <input required value={course} onChange={(event) => setCourse(event.target.value)} className="input-field" placeholder="Data Structures" />
+          <span className="mb-2 block text-sm text-slate-200">Course / Major</span>
+          <input required value={course} onChange={(event) => setCourse(event.target.value)} className="input-field" placeholder="Computer Science & Engineering" />
         </label>
 
         <label className="block sm:col-span-2">
@@ -125,14 +173,16 @@ export default function SignupPage() {
           {profileDp ? <img src={profileDp} alt="Profile preview" className="mt-3 h-20 w-20 rounded-2xl border border-white/10 object-cover" /> : null}
         </label>
 
-        <div className="sm:col-span-2">
-          <button type="submit" disabled={loading || Boolean(firebaseConfigError)} className="btn-primary w-full py-3">
-            {loading ? 'Creating account...' : 'Continue with Google'}
+        <div className="flex flex-col gap-3 sm:col-span-2">
+          <button type="submit" disabled={loading} className="btn-primary w-full py-3">
+            {loading ? 'Creating account...' : 'Create Account & Begin'}
+          </button>
+          <button type="button" onClick={handleGoogleSignup} disabled={loading} className="btn-secondary w-full py-3">
+            Sign up with Google
           </button>
         </div>
       </form>
 
-      {firebaseConfigError ? <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/10 p-3 text-sm text-amber-100">{firebaseConfigError}</p> : null}
       {error ? <p className="mt-4 rounded-xl border border-rose-400/20 bg-rose-400/10 p-3 text-sm text-rose-100">{error}</p> : null}
       {success ? <p className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-100">{success}</p> : null}
 

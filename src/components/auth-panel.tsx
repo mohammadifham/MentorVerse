@@ -2,12 +2,16 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
 import { LogIn, LogOut } from 'lucide-react';
-import { getFirebaseAuth, getFirebaseConfigurationError, signOutUser } from '@/lib/firebase';
+import {
+  getFirebaseAuth,
+  onAuthStateChanged,
+  signOutUser,
+  type UnifiedUser
+} from '@/lib/firebase';
 
 export function AuthPanel() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UnifiedUser | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +26,6 @@ export function AuthPanel() {
       return () => unsubscribe();
     } catch {
       setReady(true);
-      setError(getFirebaseConfigurationError() ?? 'Firebase auth is not configured yet.');
     }
   }, []);
 
@@ -39,7 +42,9 @@ export function AuthPanel() {
     <div className="flex flex-col items-end gap-2 text-sm text-slate-300">
       <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 backdrop-blur">
         <span className={`h-2.5 w-2.5 rounded-full ${user ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-        <span>{ready ? (user ? user.email ?? 'Signed in' : 'Guest mode') : 'Connecting...'}</span>
+        <span>
+          {ready ? (user ? user.displayName || user.email || 'Signed in' : 'Guest mode') : 'Connecting...'}
+        </span>
       </div>
       <div className="flex gap-2">
         {user ? (

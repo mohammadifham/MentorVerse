@@ -17,11 +17,11 @@ export function SplashScreen() {
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className="flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/30 bg-gradient-to-br from-cyan-400 to-emerald-500 text-2xl font-semibold text-slate-950 shadow-[0_0_45px_rgba(34,211,238,0.45)]"
         >
-          M
+          G
         </motion.div>
 
         <div>
-          <p className="text-sm uppercase tracking-[0.4em] text-cyan-100">MentorVerse</p>
+          <p className="text-sm font-bold uppercase tracking-[0.4em] text-cyan-100">GUIDELY</p>
           <p className="mt-2 text-xs text-slate-400">Booting adaptive learning agents...</p>
         </div>
 

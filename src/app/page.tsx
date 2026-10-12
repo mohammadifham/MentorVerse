@@ -89,10 +89,10 @@ export default function HomePage() {
               <ShieldCheck className="h-4 w-4" />
               Production-ready learning platform
             </span>
-            <h1 className="max-w-3xl text-5xl font-semibold leading-tight text-white md:text-6xl">
-              MentorVerse
+            <h1 className="max-w-3xl text-5xl font-bold leading-tight text-white md:text-6xl">
+              GUIDELY
             </h1>
-            <p className="max-w-2xl text-xl text-slate-300">The AI edtech workspace for coders, CSE students, and engineering learners to master DSA, core subjects, and placement skills.</p>
+            <p className="max-w-2xl text-xl text-slate-300">The next-generation AI learning and mentoring platform for coders, CSE students, and engineering placement success.</p>
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/learn"
@@ -210,7 +210,7 @@ export default function HomePage() {
         <article className="rounded-3xl border border-cyan-300/20 bg-gradient-to-br from-cyan-400/10 to-emerald-400/10 p-6">
           <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-cyan-100">
             <Sparkles className="h-4 w-4" />
-            Why coding learners pick MentorVerse
+            Why coding learners pick GUIDELY
           </p>
           <ul className="mt-5 space-y-3 text-sm text-slate-100">
             {outcomes.map((item) => (

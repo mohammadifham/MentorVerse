@@ -10,7 +10,8 @@ import { AuthPanel } from '@/components/auth-panel';
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/learn', label: 'Learn' },
-  { href: '/dashboard', label: 'Dashboard' }
+  { href: '/dashboard', label: 'Dashboard' },
+  { href: '/admin', label: 'Admin' }
 ];
 
 export function SiteNavbar() {
@@ -23,7 +24,7 @@ export function SiteNavbar() {
       <div className="hidden border-b border-white/10 bg-white/[0.02] px-4 py-2 text-center text-xs text-slate-300 md:block">
         <span className="inline-flex items-center gap-2">
           <GraduationCap className="h-3.5 w-3.5 text-cyan-300" />
-          Built for coders, CSE students, and engineering placement preparation
+          GUIDELY — Next-Gen Multi-Agent AI Learning & Engineering Ecosystem
         </span>
       </div>
       <div className="container-shell flex items-center justify-between gap-4 py-4">
@@ -32,13 +33,13 @@ export function SiteNavbar() {
             initial={{ rotate: -6, scale: 0.94 }}
             animate={{ rotate: 0, scale: 1 }}
             transition={{ duration: 0.45 }}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/30 bg-gradient-to-br from-cyan-400 to-emerald-500 text-lg font-semibold text-slate-900 shadow-[0_0_35px_rgba(16,185,129,0.35)]"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/30 bg-gradient-to-br from-cyan-400 to-emerald-500 text-lg font-bold text-slate-900 shadow-[0_0_35px_rgba(16,185,129,0.35)]"
           >
-            M
+            G
           </motion.span>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-100">MentorVerse</p>
-            <p className="text-xs text-slate-400">EdTech for Coding and Engineering</p>
+            <p className="text-sm font-bold uppercase tracking-[0.25em] text-cyan-100">GUIDELY</p>
+            <p className="text-xs text-slate-400">Intelligent Learning & Engineering Platform</p>
           </div>
         </Link>
 

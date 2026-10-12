@@ -2,12 +2,11 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
 import { Brain, CheckCircle2, Lightbulb, Sparkles, Mic, MicOff, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { AuthPanel } from '@/components/auth-panel';
 import { AttendanceTracker } from '@/components/attendance-tracker';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { getFirebaseAuth, onAuthStateChanged, signInWithDemoStudent } from '@/lib/firebase';
 import { voiceCommandService } from '@/lib/voice-service';
 import type { AttentionStatus, LearningResponse } from '@/lib/types';
 
@@ -109,10 +108,15 @@ export function LearnWorkspace() {
 
   const fetchLesson = async () => {
     const auth = getFirebaseAuth();
-    const currentUser = auth.currentUser;
+    let currentUser = auth.currentUser;
     if (!currentUser) {
-      setError('Please sign in to start a learning session.');
-      return;
+      try {
+        currentUser = await signInWithDemoStudent();
+        setUserId(currentUser.uid);
+      } catch {
+        setError('Please sign in to start a learning session.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -123,7 +127,7 @@ export function LearnWorkspace() {
       const response = await fetch('/api/learn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({ topic, userId })
+        body: JSON.stringify({ topic, userId: currentUser.uid })
       });
 
       if (!response.ok) {
@@ -164,10 +168,15 @@ export function LearnWorkspace() {
     }
 
     const auth = getFirebaseAuth();
-    const currentUser = auth.currentUser;
+    let currentUser = auth.currentUser;
     if (!currentUser) {
-      setError('Please sign in to submit your answer.');
-      return;
+      try {
+        currentUser = await signInWithDemoStudent();
+        setUserId(currentUser.uid);
+      } catch {
+        setError('Please sign in to submit your answer.');
+        return;
+      }
     }
 
     setLoading(true);
@@ -250,7 +259,7 @@ export function LearnWorkspace() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur md:flex-row md:items-end md:justify-between">
         <div className="max-w-2xl space-y-2">
-          <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">MentorVerse Learning Studio</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-cyan-300/80">GUIDELY Learning Studio</p>
           <h1 className="text-3xl font-semibold text-white md:text-4xl">Build your understanding with multiple AI agents.</h1>
           <p className="text-sm leading-6 text-slate-300">Enter a topic, let the teacher agent explain it, and let the cognitive, adaptive, mentor, evaluation, and analysis agents personalize the lesson.</p>
         </div>

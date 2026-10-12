@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
 import { CheckCircle2, Code2, Play, TerminalSquare } from 'lucide-react';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { getFirebaseAuth, onAuthStateChanged, signInWithDemoStudent } from '@/lib/firebase';
 
 type RuntimeOption = {
   language: string;
@@ -163,10 +162,15 @@ export function CodePracticeWorkspace() {
 
   const runCode = async () => {
     const auth = getFirebaseAuth();
-    const currentUser = auth.currentUser;
+    let currentUser = auth.currentUser;
     if (!currentUser) {
-      setCompilerError('Please sign in to run and evaluate code.');
-      return;
+      try {
+        currentUser = await signInWithDemoStudent();
+        setUserId(currentUser.uid);
+      } catch {
+        setCompilerError('Please sign in to run and evaluate code.');
+        return;
+      }
     }
 
     setIsRunning(true);

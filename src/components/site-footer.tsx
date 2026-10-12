@@ -26,7 +26,7 @@ export function SiteFooter() {
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">MentorVerse for coders and engineers</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">GUIDELY for coders and engineers</p>
               <h3 className="mt-2 text-2xl font-semibold text-white">Master DSA, CSE core, and placement prep with AI-guided practice.</h3>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -49,7 +49,7 @@ export function SiteFooter() {
           transition={{ duration: 0.45 }}
           className="space-y-4"
         >
-          <p className="text-xs uppercase tracking-[0.28em] text-cyan-200">MentorVerse Neural Stack</p>
+          <p className="text-xs uppercase tracking-[0.28em] text-cyan-200">GUIDELY Neural Stack</p>
           <h2 className="max-w-xl text-2xl font-semibold text-white sm:text-3xl">Built for focused coding and engineering learners who want measurable outcomes.</h2>
           <p className="max-w-xl text-sm text-slate-300">
             Real-time tutoring, coding analytics, and confidence-aware planning across DSA, core CS subjects, and interview workflows.
@@ -95,7 +95,7 @@ export function SiteFooter() {
               <li className="flex items-center gap-2"><Radar className="h-4 w-4" /> Attention tracking ready</li>
               <li className="flex items-center gap-2"><Orbit className="h-4 w-4" /> Adaptive loop active</li>
             </ul>
-            <a href="mailto:support@mentorverse.ai" className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-100 transition hover:text-white">
+            <a href="mailto:support@guidely.ai" className="mt-4 inline-flex items-center gap-2 text-sm text-emerald-100 transition hover:text-white">
               <Mail className="h-4 w-4" /> Contact support
             </a>
           </div>
@@ -103,7 +103,7 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-white/10 px-4 py-4 text-center text-xs text-slate-400 sm:px-6 lg:px-8">
-        © {new Date().getFullYear()} MentorVerse. Personalized learning intelligence.
+        © {new Date().getFullYear()} GUIDELY. Personalized learning intelligence.
       </div>
     </footer>
   );

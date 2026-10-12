@@ -2,10 +2,9 @@
 
 import Link from 'next/link';
 import { type ChangeEvent, useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
 import { motion } from 'framer-motion';
 import { BookOpen, Code2, Flame, Mail, Phone, Target, UserRound } from 'lucide-react';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { getFirebaseAuth, onAuthStateChanged, signInWithDemoStudent, type UnifiedUser } from '@/lib/firebase';
 import type { CodeSubmissionSummary, DashboardSummary, LearnerProfile } from '@/lib/types';
 import type { ReactNode } from 'react';
 
@@ -27,7 +26,7 @@ const defaultCodeSummary: CodeSubmissionSummary = {
 
 export function LearnerDashboard() {
   const [ready, setReady] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UnifiedUser | null>(null);
   const [profile, setProfile] = useState<LearnerProfile | null>(null);
   const [summary, setSummary] = useState<DashboardSummary>(defaultSummary);
   const [codeSummary, setCodeSummary] = useState<CodeSubmissionSummary>(defaultCodeSummary);
@@ -46,7 +45,6 @@ export function LearnerDashboard() {
       return () => unsubscribe();
     } catch {
       setReady(true);
-      setError('Authentication is not configured. Add Firebase keys to continue.');
     }
   }, []);
 
