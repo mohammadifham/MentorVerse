@@ -23,7 +23,7 @@ export function SiteNavbar() {
       <div className="hidden border-b border-white/10 bg-white/[0.02] px-4 py-2 text-center text-xs text-slate-300 md:block">
         <span className="inline-flex items-center gap-2">
           <GraduationCap className="h-3.5 w-3.5 text-cyan-300" />
-          GUIDELY — Next-Gen Multi-Agent AI Learning & Engineering Ecosystem
+          GUIDELY - AI-Powered Personalized Learning Platform
         </span>
       </div>
       <div className="container-shell flex items-center justify-between gap-4 py-4">
