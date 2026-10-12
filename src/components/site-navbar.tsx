@@ -10,8 +10,7 @@ import { AuthPanel } from '@/components/auth-panel';
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/learn', label: 'Learn' },
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/admin', label: 'Admin' }
+  { href: '/dashboard', label: 'Dashboard' }
 ];
 
 export function SiteNavbar() {

@@ -40,12 +40,14 @@ export function AuthPanel() {
 
   return (
     <div className="flex flex-col items-end gap-2 text-sm text-slate-300">
-      <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 backdrop-blur">
-        <span className={`h-2.5 w-2.5 rounded-full ${user ? 'bg-emerald-400' : 'bg-slate-500'}`} />
-        <span>
-          {ready ? (user ? user.displayName || user.email || 'Signed in' : 'Guest mode') : 'Connecting...'}
-        </span>
-      </div>
+      {user ? (
+        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 backdrop-blur">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+          <span className="text-xs font-medium text-emerald-300">
+            {user.displayName || user.email || 'Signed in'}
+          </span>
+        </div>
+      ) : null}
       <div className="flex gap-2">
         {user ? (
           <>
