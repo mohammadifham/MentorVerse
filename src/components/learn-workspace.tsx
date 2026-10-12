@@ -108,15 +108,10 @@ export function LearnWorkspace() {
 
   const fetchLesson = async () => {
     const auth = getFirebaseAuth();
-    let currentUser = auth.currentUser;
+    const currentUser = auth.currentUser;
     if (!currentUser) {
-      try {
-        currentUser = await signInWithDemoStudent();
-        setUserId(currentUser.uid);
-      } catch {
-        setError('Please sign in to start a learning session.');
-        return;
-      }
+      setError('Please sign in or create an account to start a learning session.');
+      return;
     }
 
     setLoading(true);
@@ -168,15 +163,10 @@ export function LearnWorkspace() {
     }
 
     const auth = getFirebaseAuth();
-    let currentUser = auth.currentUser;
+    const currentUser = auth.currentUser;
     if (!currentUser) {
-      try {
-        currentUser = await signInWithDemoStudent();
-        setUserId(currentUser.uid);
-      } catch {
-        setError('Please sign in to submit your answer.');
-        return;
-      }
+      setError('Please sign in or create an account to submit your answer.');
+      return;
     }
 
     setLoading(true);

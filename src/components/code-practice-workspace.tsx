@@ -162,15 +162,10 @@ export function CodePracticeWorkspace() {
 
   const runCode = async () => {
     const auth = getFirebaseAuth();
-    let currentUser = auth.currentUser;
+    const currentUser = auth.currentUser;
     if (!currentUser) {
-      try {
-        currentUser = await signInWithDemoStudent();
-        setUserId(currentUser.uid);
-      } catch {
-        setCompilerError('Please sign in to run and evaluate code.');
-        return;
-      }
+      setCompilerError('Please sign in or create an account to run and evaluate code.');
+      return;
     }
 
     setIsRunning(true);
