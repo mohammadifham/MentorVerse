@@ -47,8 +47,8 @@ const activeHeartbeats = new Map<string, ActiveSessionEntry>();
 let currentAnnouncement: { text: string; type: 'info' | 'warning' | 'alert'; active: boolean } | null = null;
 
 const ADMIN_CREDENTIALS = {
-  username: 'Admin',
-  password: 'PROJECT@TRUE'
+  username: process.env.ADMIN_USERNAME || 'Admin',
+  password: process.env.ADMIN_PASSWORD || 'PROJECT@TRUE'
 };
 
 export function verifyAdminCredentials(user: string, pass: string): boolean {
