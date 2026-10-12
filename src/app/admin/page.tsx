@@ -328,16 +328,7 @@ export default function AdminPage() {
               {authLoading ? 'Verifying...' : 'Unlock Admin Console'}
             </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setUsername('Admin');
-                setPassword('PROJECT@TRUE');
-              }}
-              className="w-full text-center text-xs text-slate-400 underline transition hover:text-cyan-300"
-            >
-              Quick Fill Configured Credentials (Admin / PROJECT@TRUE)
-            </button>
+
           </form>
         </div>
       </div>

@@ -352,19 +352,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick-fill helper */}
-          <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-center">
-            <button
-              type="button"
-              onClick={() => {
-                setAdminUsername('Admin');
-                setAdminPassword('PROJECT@TRUE');
-              }}
-              className="text-xs text-amber-300/90 underline decoration-amber-500/50 transition hover:text-amber-200"
-            >
-              Quick Fill Configured Credentials (Admin / PROJECT@TRUE)
-            </button>
-          </div>
 
           {notice ? (
             <p className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-sm text-emerald-200">
