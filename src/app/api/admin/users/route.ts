@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       email,
       course: course || 'Computer Science Engineering',
       phone: phone || '+1 555-0100',
-      profileDp: null
+      profileDp: undefined
     });
 
     return NextResponse.json({
