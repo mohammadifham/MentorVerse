@@ -30,3 +30,11 @@ class MentorVerseEnv:
         response = requests.get(f"{self.base_url.rstrip('/')}/state", timeout=10)
         response.raise_for_status()
         return response.json()
+
+
+if __name__ == "__main__":
+    env = MentorVerseEnv("http://localhost:8000")
+    print(env.reset())
+    result = env.step(Action(prompt="Explain how spaced repetition helps with learning."))
+    print(result["observation"]["text"])
+    print(env.state())
