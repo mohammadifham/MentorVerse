@@ -251,11 +251,10 @@ export async function getAdminUsersList(): Promise<AdminUserRecord[]> {
       sessionsByUser.forEach((count, uid) => {
         if (!userMap.has(uid)) {
           const isOnline = activeHeartbeats.has(uid);
-          const isDemo = uid.startsWith('demo_');
           userMap.set(uid, {
             id: uid,
-            name: activeHeartbeats.get(uid)?.userName || (isDemo ? 'Alex Rivera (Demo Student)' : `Student (${uid.slice(0, 8)})`),
-            email: activeHeartbeats.get(uid)?.userEmail || (isDemo ? 'demo@guidely.ai' : `${uid.slice(0, 8)}@campus.edu`),
+            name: activeHeartbeats.get(uid)?.userName || `Student (${uid.slice(0, 8)})`,
+            email: activeHeartbeats.get(uid)?.userEmail || `${uid.slice(0, 8)}@mentorverse.edu`,
             course: 'B.Tech Computer Science Engineering',
             createdAt: new Date().toISOString(),
             lastActiveAt: isOnline ? new Date().toISOString() : undefined,

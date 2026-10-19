@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { CodeSubmissionRecord, CodeSubmissionSummary, DashboardSummary, LearnerProfile, LearningRecord } from '@/lib/types';
+import type { CodeSubmissionRecord, CodeSubmissionSummary, Course, DashboardSummary, LearnerProfile, LearningRecord } from '@/lib/types';
 import {
   saveLocalSession,
   getLocalRecentSessions,
@@ -7,7 +7,10 @@ import {
   getLocalLearnerProfile,
   upsertLocalLearnerProfile,
   saveLocalCodeSubmission,
-  getLocalCodeSubmissionSummary
+  getLocalCodeSubmissionSummary,
+  getLocalCourses,
+  getLocalCourseById,
+  upsertLocalCourse
 } from '@/lib/local-db';
 
 type LearningSessionRow = {
@@ -333,3 +336,71 @@ export async function getCodeSubmissionSummary(userId: string): Promise<CodeSubm
 
   return getLocalCodeSubmissionSummary(userId);
 }
+
+export async function getCourses(): Promise<Course[]> {
+  const client = createSupabaseAdminClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('mentorverse_courses')
+        .select('*')
+        .order('id', { ascending: true });
+      if (!error && Array.isArray(data) && data.length > 0) {
+        return data as Course[];
+      }
+    } catch {
+      // Fall through to local persistent DB
+    }
+  }
+
+  return getLocalCourses();
+}
+
+export async function getCourseById(courseId: string): Promise<Course | undefined> {
+  const client = createSupabaseAdminClient();
+  if (client) {
+    try {
+      const { data, error } = await client
+        .from('mentorverse_courses')
+        .select('*')
+        .eq('id', courseId)
+        .maybeSingle();
+      if (!error && data) {
+        return data as Course;
+      }
+    } catch {
+      // Fall through
+    }
+  }
+
+  return getLocalCourseById(courseId);
+}
+
+export async function upsertCourse(course: Course): Promise<void> {
+  const client = createSupabaseAdminClient();
+  if (client) {
+    try {
+      await client.from('mentorverse_courses').upsert({
+        id: course.id,
+        title: course.title,
+        subtitle: course.subtitle,
+        level: course.level,
+        target_audience: course.targetAudience,
+        overview: course.overview,
+        badge: course.badge,
+        accent_color: course.accentColor,
+        gradient: course.gradient,
+        estimated_hours: course.estimatedHours,
+        total_problems: course.totalProblems,
+        company_tags: course.companyTags,
+        modules: course.modules,
+        updated_at: new Date().toISOString()
+      });
+    } catch {
+      // Fall through to local DB
+    }
+  }
+
+  upsertLocalCourse(course);
+}
+

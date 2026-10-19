@@ -5,9 +5,14 @@ import { motion } from 'framer-motion';
 import { BookOpenCheck, Cpu, Headphones, Mail, Orbit, Radar } from 'lucide-react';
 
 const links = [
-  { href: '/', label: 'Home' },
-  { href: '/learn', label: 'Learn workspace' },
-  { href: '/dashboard', label: 'Analytics dashboard' }
+  { href: '/courses', label: 'Placement Courses' },
+  { href: '/interview', label: 'AI Mock Interview' },
+  { href: '/cheat-sheets', label: 'CS Cheat Sheets' },
+  { href: '/community', label: 'Student Doubt Forum' },
+  { href: '/leaderboard', label: 'Placement Leaderboard' },
+  { href: '/certificates', label: 'Verified Certificates' },
+  { href: '/learn', label: 'AI Tutor & Compiler' },
+  { href: '/dashboard', label: 'Analytics Dashboard' }
 ];
 
 export function SiteFooter() {

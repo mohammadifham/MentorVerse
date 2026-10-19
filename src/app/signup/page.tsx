@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChangeEvent, FormEvent, useState } from 'react';
-import { signInWithDemoStudent, signInWithEmail, signInWithGoogle } from '@/lib/firebase';
+import { Eye, EyeOff, Lock, Sparkles, UserPlus } from 'lucide-react';
+import { signInWithEmail, signInWithGoogle } from '@/lib/firebase';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function SignupPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [course, setCourse] = useState('Computer Science & Engineering');
   const [profileDp, setProfileDp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,16 +45,21 @@ export default function SignupPage() {
     setError(null);
     setSuccess(null);
 
-    if (!name.trim() || !phone.trim() || !course.trim()) {
-      setError('Please fill in name, number, and course before continuing.');
+    if (!name.trim() || !phone.trim() || !email.trim() || !password.trim() || !course.trim()) {
+      setError('Please fill in your name, phone number, email, password, and course.');
       return;
     }
 
-    const cleanEmail = email.trim() || `${name.trim().toLowerCase().replace(/\s+/g, '.')}@mentorverse.dev`;
+    if (password.trim().length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    const cleanEmail = email.trim();
 
     setLoading(true);
     try {
-      const authResult = await signInWithEmail(cleanEmail, password || 'mentorverse123');
+      const authResult = await signInWithEmail(cleanEmail, password.trim());
       const user = authResult.user;
       const idToken = await user.getIdToken();
 
@@ -77,23 +84,10 @@ export default function SignupPage() {
       setSuccess('Account created successfully! Redirecting to dashboard...');
       setTimeout(() => {
         router.push('/dashboard');
-      }, 600);
+      }, 500);
     } catch (signupError) {
       const fallback = signupError instanceof Error ? signupError.message : 'Signup failed.';
       setError(fallback);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDemo = async () => {
-    setError(null);
-    setLoading(true);
-    try {
-      await signInWithDemoStudent();
-      router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Demo signup failed.');
     } finally {
       setLoading(false);
     }
@@ -115,9 +109,9 @@ export default function SignupPage() {
         body: JSON.stringify({
           userId: googleUser.uid,
           name: name.trim() || googleUser.displayName || 'Learner',
-          phone: phone.trim() || '+1 (555) 000-0000',
+          phone: phone.trim() || 'Not specified',
           email: finalEmail,
-          course: course.trim() || 'Computer Science',
+          course: course.trim() || 'Computer Science & Engineering',
           profileDp: profileDp.trim() || googleUser.photoURL || ''
         })
       });
@@ -132,37 +126,56 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl rounded-[2rem] border border-white/10 bg-slate-950/70 p-7 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:p-10">
+    <div className="mx-auto w-full max-w-3xl rounded-[2rem] border border-white/10 bg-slate-950/80 p-7 shadow-2xl shadow-cyan-900/20 backdrop-blur sm:p-10">
       <div className="flex items-center justify-between">
         <p className="text-xs uppercase tracking-[0.35em] text-cyan-200">Create learner account</p>
-        <button
-          type="button"
-          onClick={handleQuickDemo}
-          className="rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300 transition hover:bg-cyan-500/30"
-        >
-          ⚡ Fast Track as Demo Student
-        </button>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs font-semibold text-cyan-300">
+          <Sparkles className="h-3 w-3" />
+          Placement Ready
+        </span>
       </div>
       <h1 className="mt-2 text-3xl font-semibold text-white">Sign up with your details</h1>
-      <p className="mt-3 text-sm text-slate-300">Set up your profile to start adaptive AI mentoring and hands-on coding practice.</p>
+      <p className="mt-3 text-sm text-slate-300">Set up your student profile to access all CSE Placement Courses and live AI instruction.</p>
 
       <form onSubmit={handleSignup} className="mt-7 grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Full name</span>
-          <input required value={name} onChange={(event) => setName(event.target.value)} className="input-field" placeholder="Jane Doe" />
+          <input required value={name} onChange={(event) => setName(event.target.value)} className="input-field" placeholder="Enter your full name" />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Phone number</span>
-          <input required value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="+1 (555) 123-4567" />
+          <input required value={phone} onChange={(event) => setPhone(event.target.value)} className="input-field" placeholder="e.g. +1 234 567 8900" />
         </label>
 
         <label className="block">
           <span className="mb-2 block text-sm text-slate-200">Email</span>
-          <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="jane@example.com" />
+          <input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} className="input-field" placeholder="student@university.edu" />
         </label>
 
         <label className="block">
+          <span className="mb-2 block text-sm text-slate-200">Password</span>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              required
+              minLength={6}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="input-field pr-10"
+              placeholder="Min. 6 characters"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </label>
+
+        <label className="block sm:col-span-2">
           <span className="mb-2 block text-sm text-slate-200">Course / Major</span>
           <input required value={course} onChange={(event) => setCourse(event.target.value)} className="input-field" placeholder="Computer Science & Engineering" />
         </label>
@@ -173,9 +186,10 @@ export default function SignupPage() {
           {profileDp ? <img src={profileDp} alt="Profile preview" className="mt-3 h-20 w-20 rounded-2xl border border-white/10 object-cover" /> : null}
         </label>
 
-        <div className="flex flex-col gap-3 sm:col-span-2">
-          <button type="submit" disabled={loading} className="btn-primary w-full py-3">
-            {loading ? 'Creating account...' : 'Create Account & Begin'}
+        <div className="flex flex-col gap-3 sm:col-span-2 pt-2">
+          <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 text-sm font-semibold">
+            <UserPlus className="h-4 w-4" />
+            {loading ? 'Creating account...' : 'Create Account & Begin Learning'}
           </button>
           <button type="button" onClick={handleGoogleSignup} disabled={loading} className="btn-secondary w-full py-3">
             Sign up with Google

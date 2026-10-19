@@ -8,8 +8,13 @@ import { useState } from 'react';
 import { AuthPanel } from '@/components/auth-panel';
 
 const navItems = [
-  { href: '/', label: 'Home' },
-  { href: '/learn', label: 'Learn' },
+  { href: '/courses', label: 'Courses' },
+  { href: '/interview', label: 'AI Interview' },
+  { href: '/cheat-sheets', label: 'Cheat Sheets' },
+  { href: '/community', label: 'Community' },
+  { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/certificates', label: 'Certificates' },
+  { href: '/learn', label: 'AI Tutor' },
   { href: '/dashboard', label: 'Dashboard' }
 ];
 
@@ -18,66 +23,59 @@ export function SiteNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.13),transparent_40%),radial-gradient(circle_at_85%_30%,rgba(16,185,129,0.15),transparent_35%)]" />
-      <div className="hidden border-b border-white/10 bg-white/[0.02] px-4 py-2 text-center text-xs text-slate-300 md:block">
+      <div className="hidden border-b border-white/10 bg-white/[0.02] px-4 py-1.5 text-center text-xs text-slate-300 md:block">
         <span className="inline-flex items-center gap-2">
           <GraduationCap className="h-3.5 w-3.5 text-cyan-300" />
-          GUIDELY - AI-Powered Personalized Learning Platform
+          GUIDELY - Enterprise AI EdTech Ecosystem for Engineering Placements
         </span>
       </div>
-      <div className="container-shell flex items-center justify-between gap-4 py-4">
+      <div className="container-shell flex items-center justify-between gap-4 py-3.5">
         <Link href="/" className="group flex items-center gap-3" onClick={() => setMobileOpen(false)}>
           <motion.span
             initial={{ rotate: -6, scale: 0.94 }}
             animate={{ rotate: 0, scale: 1 }}
             transition={{ duration: 0.45 }}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/30 bg-gradient-to-br from-cyan-400 to-emerald-500 text-lg font-bold text-slate-900 shadow-[0_0_35px_rgba(16,185,129,0.35)]"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-300/30 bg-gradient-to-br from-cyan-400 to-emerald-500 text-lg font-bold text-slate-950 shadow-[0_0_30px_rgba(16,185,129,0.35)]"
           >
             G
           </motion.span>
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.25em] text-cyan-100">GUIDELY</p>
-            <p className="text-xs text-slate-400">Intelligent Learning & Engineering Platform</p>
+            <p className="text-[11px] text-slate-400">AI EdTech & Placement Ecosystem</p>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-2 md:flex">
+        <nav className="hidden items-center gap-1 xl:gap-1.5 md:flex">
           {navItems.map((item, index) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
             return (
               <motion.div
                 key={item.href}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * index + 0.05, duration: 0.35 }}
-                whileHover={{ y: -2, scale: 1.03 }}
+                transition={{ delay: 0.03 * index + 0.05, duration: 0.3 }}
+                whileHover={{ y: -1 }}
               >
                 <Link
                   href={item.href}
-                  className="group relative inline-flex items-center rounded-full px-4 py-2 text-sm font-medium text-slate-200 transition hover:text-white"
+                  className={`group relative inline-flex items-center rounded-xl px-2.5 py-1.5 text-xs font-medium xl:px-3 xl:text-sm transition ${
+                    isActive ? 'text-cyan-200' : 'text-slate-300 hover:text-white'
+                  }`}
                 >
                   {isActive ? (
                     <motion.span
                       layoutId="nav-pill"
-                      className="absolute inset-0 rounded-full border border-cyan-300/40 bg-cyan-300/10"
+                      className="absolute inset-0 rounded-xl border border-cyan-400/40 bg-cyan-400/10"
                       transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                     />
                   ) : null}
                   <span className="relative z-10">{item.label}</span>
-                  <span className="pointer-events-none absolute bottom-1 left-1/2 h-px w-0 -translate-x-1/2 bg-gradient-to-r from-cyan-300 to-emerald-300 opacity-70 transition-all duration-300 group-hover:w-3/4" />
                 </Link>
               </motion.div>
             );
           })}
-          <span className="ml-1 h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.9)]" />
-          <Link
-            href="/learn"
-            className="btn-primary ml-2 rounded-full px-4 py-2 text-sm"
-          >
-            Start coding practice
-            <ArrowRight className="h-4 w-4" />
-          </Link>
         </nav>
 
         <div className="hidden lg:block">

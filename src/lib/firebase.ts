@@ -37,13 +37,30 @@ function getStoredLocalUser(): UnifiedUser | null {
     if (!parsed || !parsed.uid) return null;
     return {
       uid: parsed.uid,
-      email: parsed.email ?? 'demo@mentorverse.dev',
-      displayName: parsed.displayName ?? 'Learner',
+      email: parsed.email ?? 'student@mentorverse.dev',
+      displayName: parsed.displayName ?? 'Student Learner',
       getIdToken: async () => `mv_${parsed.uid}:${Date.now()}`
     };
   } catch {
     return null;
   }
+}
+
+export function getCurrentUnifiedUser(): UnifiedUser | null {
+  if (isFirebaseConfigured()) {
+    try {
+      const fbApp = getFirebaseApp();
+      if (fbApp) {
+        const auth = getAuth(fbApp);
+        if (auth.currentUser) {
+          return auth.currentUser;
+        }
+      }
+    } catch {
+      // Ignore
+    }
+  }
+  return cachedLocalUser ?? getStoredLocalUser();
 }
 
 function setStoredLocalUser(user: UnifiedUser | null): void {
@@ -197,15 +214,16 @@ export async function signInWithGoogle(): Promise<any> {
     return signInWithPopup(auth, provider);
   }
 
-  // Local fallback: Demo student Google simulation
-  const demoStudent: UnifiedUser = {
-    uid: 'demo_student_1',
-    email: 'alex.rivera@mentorverse.dev',
-    displayName: 'Alex Rivera (Google Demo)',
-    getIdToken: async () => `mv_demo_student_1:${Date.now()}`
+  // Local fallback: Clean student Google authentication
+  const googleUid = 'google_' + Math.random().toString(36).substring(2, 11);
+  const studentUser: UnifiedUser = {
+    uid: googleUid,
+    email: 'student@mentorverse.dev',
+    displayName: 'Student Learner',
+    getIdToken: async () => `mv_${googleUid}:${Date.now()}`
   };
-  setStoredLocalUser(demoStudent);
-  return { user: demoStudent };
+  setStoredLocalUser(studentUser);
+  return { user: studentUser };
 }
 
 export async function signInWithGoogleRedirect() {
@@ -239,24 +257,13 @@ export async function signInWithEmail(email: string, password: string): Promise<
   const cleanEmail = email.trim();
   const safeId = 'user_' + Buffer.from(cleanEmail).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
   const localUser: UnifiedUser = {
-    uid: safeId || 'demo_student_1',
+    uid: safeId || ('user_' + Math.random().toString(36).substring(2, 10)),
     email: cleanEmail,
     displayName: cleanEmail.split('@')[0],
-    getIdToken: async () => `mv_${safeId || 'demo_student_1'}:${Date.now()}`
+    getIdToken: async () => `mv_${safeId}:${Date.now()}`
   };
   setStoredLocalUser(localUser);
   return { user: localUser };
-}
-
-export async function signInWithDemoStudent(): Promise<UnifiedUser> {
-  const demoUser: UnifiedUser = {
-    uid: 'demo_student_1',
-    email: 'demo@mentorverse.dev',
-    displayName: 'Alex Rivera',
-    getIdToken: async () => `mv_demo_student_1:${Date.now()}`
-  };
-  setStoredLocalUser(demoUser);
-  return demoUser;
 }
 
 export async function signOutUser(): Promise<void> {

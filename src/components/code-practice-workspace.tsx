@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Code2, Play, TerminalSquare } from 'lucide-react';
-import { getFirebaseAuth, onAuthStateChanged, signInWithDemoStudent } from '@/lib/firebase';
+import { getFirebaseAuth, onAuthStateChanged } from '@/lib/firebase';
 
 type RuntimeOption = {
   language: string;
@@ -21,13 +21,49 @@ type PracticeProblem = {
 
 const fallbackProblems: PracticeProblem[] = [
   {
-    id: 'sum-two',
-    topic: 'DSA Basics',
+    id: 'two-sum',
+    topic: 'Arrays & Hashing',
     difficulty: 'easy',
-    title: 'Sum of Two Numbers',
-    statement: 'Read two integers and print their sum.',
-    sampleInput: '10 15',
-    expectedOutput: '25'
+    title: 'Two Sum Target Problem',
+    statement: 'Given an array of integers and an integer target, return the two numbers that add up to target.',
+    sampleInput: '2 7 11 15\n9',
+    expectedOutput: '2 7'
+  },
+  {
+    id: 'palindrome-check',
+    topic: 'String Manipulation',
+    difficulty: 'easy',
+    title: 'Valid Palindrome Verification',
+    statement: 'Given a string, return true if it reads the same backward as forward, otherwise false.',
+    sampleInput: 'racecar',
+    expectedOutput: 'true'
+  },
+  {
+    id: 'binary-search',
+    topic: 'Searching Algorithms',
+    difficulty: 'easy',
+    title: 'Binary Search in Sorted Array',
+    statement: 'Search for target element in a sorted integer array and output its zero-based index or -1 if not found.',
+    sampleInput: '1 3 5 7 9 11 13\n7',
+    expectedOutput: '3'
+  },
+  {
+    id: 'max-subarray',
+    topic: 'Dynamic Programming / Kadane',
+    difficulty: 'medium',
+    title: 'Maximum Subarray Sum (Kadane)',
+    statement: 'Find the contiguous subarray within an integer array which has the largest sum and print that sum.',
+    sampleInput: '-2 1 -3 4 -1 2 1 -5 4',
+    expectedOutput: '6'
+  },
+  {
+    id: 'valid-parentheses',
+    topic: 'Stacks & Queues',
+    difficulty: 'medium',
+    title: 'Valid Balanced Parentheses',
+    statement: 'Given a string containing just the characters "(", ")", "{", "}", "[" and "]", determine if the input string is valid.',
+    sampleInput: '{[()]}',
+    expectedOutput: 'true'
   }
 ];
 

@@ -3,10 +3,12 @@ import path from 'path';
 import type {
   CodeSubmissionRecord,
   CodeSubmissionSummary,
+  Course,
   DashboardSummary,
   LearnerProfile,
   LearningRecord
 } from '@/lib/types';
+import { PLACEMENT_COURSES } from '@/lib/courses-data';
 
 interface LocalDatabaseSchema {
   sessions: LearningRecord[];
@@ -24,6 +26,7 @@ interface LocalDatabaseSchema {
       createdAt: string;
     }
   >;
+  courses: Course[];
 }
 
 const DATA_DIR = path.join(process.cwd(), '.data');
@@ -44,16 +47,8 @@ function getInitialDatabase(): LocalDatabaseSchema {
     sessions: [],
     profiles: {},
     codeSubmissions: [],
-    localUsers: {
-      demo_student_1: {
-        id: 'demo_student_1',
-        email: 'demo@mentorverse.dev',
-        name: 'Alex Rivera',
-        course: 'Computer Science & Engineering',
-        phone: '+1 (555) 019-2834',
-        createdAt: new Date().toISOString()
-      }
-    }
+    localUsers: {},
+    courses: PLACEMENT_COURSES
   };
 }
 
@@ -67,12 +62,27 @@ export function readDatabase(): LocalDatabaseSchema {
     }
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<LocalDatabaseSchema>;
-    return {
-      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-      profiles: typeof parsed.profiles === 'object' && parsed.profiles ? parsed.profiles : {},
-      codeSubmissions: Array.isArray(parsed.codeSubmissions) ? parsed.codeSubmissions : [],
-      localUsers: typeof parsed.localUsers === 'object' && parsed.localUsers ? parsed.localUsers : getInitialDatabase().localUsers
+
+    const sessions = Array.isArray(parsed.sessions) ? parsed.sessions : [];
+    const profiles = typeof parsed.profiles === 'object' && parsed.profiles ? parsed.profiles : {};
+    const codeSubmissions = Array.isArray(parsed.codeSubmissions) ? parsed.codeSubmissions : [];
+    const localUsers = typeof parsed.localUsers === 'object' && parsed.localUsers ? parsed.localUsers : {};
+    const courses = Array.isArray(parsed.courses) && parsed.courses.length > 0 ? parsed.courses : PLACEMENT_COURSES;
+
+    const db: LocalDatabaseSchema = {
+      sessions,
+      profiles,
+      codeSubmissions,
+      localUsers,
+      courses
     };
+
+    // If courses were not yet persisted on disk, save immediately
+    if (!Array.isArray(parsed.courses) || parsed.courses.length === 0) {
+      writeDatabase(db);
+    }
+
+    return db;
   } catch (error) {
     console.error('Error reading local database, resetting to default:', error);
     return getInitialDatabase();
@@ -80,6 +90,27 @@ export function readDatabase(): LocalDatabaseSchema {
 }
 
 export const readLocalDb = readDatabase;
+
+export function getLocalCourses(): Course[] {
+  const db = readDatabase();
+  return db.courses;
+}
+
+export function getLocalCourseById(id: string): Course | undefined {
+  const db = readDatabase();
+  return db.courses.find((c) => c.id === id);
+}
+
+export function upsertLocalCourse(course: Course): void {
+  const db = readDatabase();
+  const idx = db.courses.findIndex((c) => c.id === course.id);
+  if (idx >= 0) {
+    db.courses[idx] = course;
+  } else {
+    db.courses.push(course);
+  }
+  writeDatabase(db);
+}
 
 export function writeDatabase(db: LocalDatabaseSchema): void {
   ensureDataDir();

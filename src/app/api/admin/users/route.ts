@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       name,
       email,
       course: course || 'Computer Science Engineering',
-      phone: phone || '+1 555-0100',
+      phone: phone || 'Not specified',
       profileDp: undefined
     });
 

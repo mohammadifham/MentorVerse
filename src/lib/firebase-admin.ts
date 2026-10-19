@@ -49,15 +49,15 @@ export async function verifyRequestAuth(request: Request): Promise<{ uid: string
     throw new Error('Unauthorized');
   }
 
-  // 1. Handle local / demo student tokens
+  // 1. Handle local student session tokens
   if (token.startsWith('mv_')) {
     const rawUid = token.slice(3);
-    const uid = rawUid.split(':')[0] || 'demo_student_1';
+    const uid = rawUid.split(':')[0] || 'student_guest';
     return { uid };
   }
 
-  if (token === 'demo' || token === 'guest') {
-    return { uid: 'demo_student_1' };
+  if (token === 'guest' || token === 'demo') {
+    return { uid: 'student_guest' };
   }
 
   // 2. Try Firebase Admin if credentials are fully available

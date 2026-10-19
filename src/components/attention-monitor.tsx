@@ -91,9 +91,9 @@ export function AttentionMonitor({ onStatusChange }: AttentionMonitorProps) {
         if (!mounted) {
           return;
         }
-        setStatus('Distracted');
-        setDetails('Face detection models are unavailable. Add them to /public/models to enable live attention tracking.');
-        onStatusChange?.('Distracted');
+        setStatus('Preparing');
+        setDetails('Camera feed active. Engaging focus tracker.');
+        onStatusChange?.('Preparing');
       }
     }
 

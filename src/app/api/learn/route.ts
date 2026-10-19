@@ -8,14 +8,26 @@ import { cognitiveAgent } from '@/lib/agents/cognitive';
 import { evaluationAgent } from '@/lib/agents/evaluation';
 import { mentorAgent } from '@/lib/agents/mentor';
 import { teacherAgent } from '@/lib/agents/teacher';
+import { evaluateStudentAnswer } from '@/lib/ai-engine';
 import { getRecentLearningSessions, saveLearningSession } from '@/lib/supabase';
+import type { AnswerEvaluation, TeachingMode } from '@/lib/types';
 
 const requestSchema = z.object({
-  topic: z.string().trim().min(2),
+  topic: z.string().trim().min(1),
   answer: z.string().trim().optional().default(''),
   responseTime: z.number().positive().optional(),
   question: z.string().trim().optional(),
-  userId: z.string().trim().optional()
+  userId: z.string().trim().optional(),
+  mode: z.enum(['standard', 'eli5', 'hands_on', 'quick']).optional(),
+  followUp: z.string().trim().optional(),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string()
+      })
+    )
+    .optional()
 });
 
 export async function POST(request: Request) {
@@ -23,10 +35,21 @@ export async function POST(request: Request) {
     const { uid } = await verifyRequestAuth(request);
     const body = requestSchema.parse(await request.json());
 
-    const teacherResult = await teacherAgent(body.topic);
+    const mode: TeachingMode = body.mode ?? 'standard';
+    const teacherResult = await teacherAgent(body.topic, mode, body.followUp, body.history);
     const question = body.question?.trim() || teacherResult.question;
     const answer = body.answer?.trim() || '';
     const hasAnswer = answer.length > 0;
+
+    let answerEvaluation: AnswerEvaluation | undefined = undefined;
+    if (hasAnswer) {
+      answerEvaluation = await evaluateStudentAnswer({
+        topic: body.topic,
+        question,
+        answer,
+        responseTime: body.responseTime
+      });
+    }
 
     const cognitiveResult = hasAnswer
       ? cognitiveAgent({
@@ -36,24 +59,27 @@ export async function POST(request: Request) {
           responseTime: body.responseTime
         })
       : {
-          correctness: 0.45,
+          correctness: 0.5,
           confidence: 0.5,
           understandingLevel: 'medium' as const,
-          reasoning: 'No answer submitted yet, so the system is waiting for a response.'
+          reasoning: 'No answer submitted yet, so the system is waiting for your response.'
         };
 
-    const adaptiveResult = adaptiveAgent(cognitiveResult.confidence);
+    const effectiveConfidence = answerEvaluation ? answerEvaluation.score / 100 : cognitiveResult.confidence;
+    const adaptiveResult = adaptiveAgent(effectiveConfidence);
     const mentorResult = await mentorAgent({
       topic: body.topic,
-      confidence: cognitiveResult.confidence,
+      confidence: effectiveConfidence,
       level: adaptiveResult.level,
-      answer
+      answer,
+      question
     });
-    const evaluationResult = evaluationAgent({ confidence: cognitiveResult.confidence });
+    const evaluationResult = evaluationAgent({ confidence: effectiveConfidence });
+    const finalScore = answerEvaluation ? answerEvaluation.score : evaluationResult.score;
     const recentHistory = await getRecentLearningSessions(uid);
     const analysisResult = analysisAgent({
       topic: body.topic,
-      confidence: cognitiveResult.confidence,
+      confidence: effectiveConfidence,
       history: recentHistory
     });
     const attendanceResult = attendanceAgent({
@@ -66,28 +92,33 @@ export async function POST(request: Request) {
       userId: uid,
       topic: body.topic,
       answer: hasAnswer ? answer : undefined,
-      confidence: cognitiveResult.confidence,
-      score: evaluationResult.score,
+      confidence: effectiveConfidence,
+      score: finalScore,
       responseTime: body.responseTime,
       weakTopics: analysisResult.weakTopics,
       strongTopics: analysisResult.strongTopics,
       question,
-      feedback: mentorResult.feedback,
+      feedback: answerEvaluation ? answerEvaluation.teacherAdvice : mentorResult.feedback,
       level: adaptiveResult.level,
       createdAt: new Date().toISOString()
     });
 
     return NextResponse.json({
       explanation: teacherResult.explanation,
+      example: teacherResult.example,
       question,
-      confidence: cognitiveResult.confidence,
+      misconceptions: teacherResult.misconceptions,
+      keyTakeaways: teacherResult.keyTakeaways,
+      mode: teacherResult.mode || mode,
+      confidence: effectiveConfidence,
       level: adaptiveResult.level,
-      feedback: hasAnswer ? mentorResult.feedback : 'Generate a response to receive personalized mentor feedback.',
+      feedback: answerEvaluation ? answerEvaluation.teacherAdvice : hasAnswer ? mentorResult.feedback : 'Generate an answer to receive personalized mentor feedback.',
       weak_topics: analysisResult.weakTopics,
+      evaluation: answerEvaluation,
       meta: {
-        correctness: cognitiveResult.correctness,
+        correctness: answerEvaluation ? answerEvaluation.score / 100 : cognitiveResult.correctness,
         understanding: cognitiveResult.understandingLevel,
-        score: evaluationResult.score,
+        score: finalScore,
         trend: evaluationResult.trend,
         sessionCount: attendanceResult.sessionCount,
         activityScore: attendanceResult.activityScore

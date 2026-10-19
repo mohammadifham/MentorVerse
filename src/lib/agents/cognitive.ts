@@ -16,28 +16,34 @@ export function cognitiveAgent(input: {
 }): CognitiveResult {
   const answer = input.answer?.trim() ?? '';
   const question = input.question?.trim() ?? '';
-  const topicTokens = normalizeText(input.topic)
-    .split(/\s+/)
-    .filter(Boolean);
-  const answerTokens = normalizeText(answer)
-    .split(/\s+/)
-    .filter(Boolean);
-  const questionTokens = normalizeText(question)
-    .split(/\s+/)
-    .filter(Boolean);
+  const topicTokens = normalizeText(input.topic).split(/\s+/).filter(Boolean);
+  const answerTokens = normalizeText(answer).split(/\s+/).filter(Boolean);
+  const questionTokens = normalizeText(question).split(/\s+/).filter(Boolean);
 
-  const keywordHits = topicTokens.filter((token) => answerTokens.includes(token) || questionTokens.includes(token)).length;
-  const keywordCoverage = topicTokens.length > 0 ? keywordHits / topicTokens.length : 0;
-  const answerLengthScore = clamp(answerTokens.length / 24, 0, 1);
-  const timingScore = typeof input.responseTime === 'number' ? clamp(input.responseTime <= 20 ? 1 : 1 - (input.responseTime - 20) / 120, 0.2, 1) : 0.6;
-  const structureScore = clamp(answer.includes('.') ? 0.85 : 0.55, 0, 1);
-  const correctness = clamp(0.3 + keywordCoverage * 0.4 + answerLengthScore * 0.2 + structureScore * 0.1, 0, 1);
-  const confidence = clamp(correctness * 0.55 + timingScore * 0.45, 0, 1);
+  const topicHits = topicTokens.filter((token) => answerTokens.includes(token) || questionTokens.includes(token)).length;
+  const questionHits = questionTokens.filter((token) => answerTokens.includes(token)).length;
+
+  const topicCoverage = topicTokens.length > 0 ? topicHits / topicTokens.length : 0.5;
+  const questionCoverage = questionTokens.length > 0 ? clamp(questionHits / 4, 0, 1) : 0.5;
+
+  const answerLengthScore = clamp(answerTokens.length / 18, 0.2, 1);
+  const structureScore = clamp(answer.includes('.') || answer.includes(',') || answer.includes('\n') ? 0.9 : 0.6, 0.4, 1);
+  const timingScore = typeof input.responseTime === 'number'
+    ? clamp(input.responseTime <= 25 ? 1 : 1 - (input.responseTime - 25) / 120, 0.3, 1)
+    : 0.7;
+
+  const correctness = clamp(0.35 + topicCoverage * 0.3 + questionCoverage * 0.15 + answerLengthScore * 0.1 + structureScore * 0.1, 0.2, 1);
+  const confidence = clamp(correctness * 0.6 + timingScore * 0.4, 0.2, 1);
 
   return {
     correctness,
     confidence,
     understandingLevel: confidence < 0.45 ? 'low' : confidence < 0.75 ? 'medium' : 'high',
-    reasoning: confidence < 0.45 ? 'The answer is brief or misses core topic words.' : confidence < 0.75 ? 'The response shows partial understanding and some structure.' : 'The response is specific, structured, and aligns well with the topic.'
+    reasoning:
+      confidence < 0.45
+        ? 'The answer is brief; consider elaborating with definitions and examples.'
+        : confidence < 0.75
+        ? 'The response shows good foundational understanding and structure.'
+        : 'The response is specific, well-structured, and aligns accurately with the topic.'
   };
 }
